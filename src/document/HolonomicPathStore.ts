@@ -420,6 +420,30 @@ export const HolonomicPathStore = types
         }
         console.log(self.nonGuessPoints.at(i)?.controlIntervalCount);
       },
+      minimizeDeltaHeading() {
+        if (self.waypoints.length < 2) return;
+        let newHeadings = [];
+        newHeadings.push(self.waypoints.at(0)!.heading);
+        for (let i = 1; i < self.waypoints.length; i++) {
+          const heading = self.waypoints[i].heading;
+          const prevHeading = newHeadings.at(newHeadings.length - 1) ?? heading;
+          let newHeading = heading;
+          let iters = 0;
+          while (Math.abs(newHeading % (2 * Math.PI) - prevHeading % (2 * Math.PI)) > Math.PI) {
+            console.log(newHeading, prevHeading);
+            console.log(Math.abs(newHeading % (2 * Math.PI) - prevHeading % (2 * Math.PI)));
+            if (heading < prevHeading) {
+              newHeading += 2 * Math.PI;
+            } else {
+              newHeading -= 2 * Math.PI;
+            }
+            iters++;
+            if (iters > 10) break;
+          }
+          newHeadings.push(newHeading);
+          self.waypoints.at(i)!.heading = newHeading;
+        }
+      },
     };
   });
 export interface IHolonomicPathStore

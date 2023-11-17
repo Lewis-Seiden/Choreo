@@ -69,6 +69,7 @@ const StateStore = types
           );
         }
         return new Promise((resolve, reject) => {
+          // pathStore.minimizeDeltaHeading();
           const controlIntervalOptResult =
             pathStore.optimizeControlIntervalCounts(self.document.robotConfig);
           if (controlIntervalOptResult !== undefined) {
