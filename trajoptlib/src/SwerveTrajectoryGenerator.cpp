@@ -55,6 +55,8 @@ SwerveTrajectoryGenerator::SwerveTrajectoryGenerator(
   ay.reserve(sampTot);
   alpha.reserve(sampTot);
 
+  voltage.reserve(sampTot);
+
   Fx.reserve(sampTot);
   Fy.reserve(sampTot);
   for (size_t sampIndex = 0; sampIndex < sampTot; ++sampIndex) {
@@ -180,6 +182,7 @@ SwerveTrajectoryGenerator::SwerveTrajectoryGenerator(
 
     // Apply module power constraints
     auto vWrtRobot = v.RotateBy(-theta);
+    auto torqueSum = sleipnir::Variable();
     for (size_t moduleIndex = 0; moduleIndex < path.drivetrain.modules.size();
          ++moduleIndex) {
       const auto& translation = path.drivetrain.modules.at(moduleIndex);
@@ -187,12 +190,13 @@ SwerveTrajectoryGenerator::SwerveTrajectoryGenerator(
       Translation2v vWheelWrtRobot{
           vWrtRobot.X() - translation.Y() * omega.at(index),
           vWrtRobot.Y() + translation.X() * omega.at(index)};
-      double maxWheelVelocity = wheelRadius * wheelMaxAngularVelocity;
+      auto maxWheelVelocity = (wheelRadius * wheelMaxAngularVelocity) * (voltage.at(index) / 12.0);
       problem.SubjectTo(vWheelWrtRobot.SquaredNorm() <=
                         maxWheelVelocity * maxWheelVelocity);
 
       Translation2v moduleF{Fx.at(index).at(moduleIndex),
                             Fy.at(index).at(moduleIndex)};
+      torqueSum += moduleF.Norm();
       double maxForce = wheelMaxTorque / wheelRadius;
       problem.SubjectTo(moduleF.SquaredNorm() <= maxForce * maxForce);
     }
@@ -201,6 +205,10 @@ SwerveTrajectoryGenerator::SwerveTrajectoryGenerator(
     problem.SubjectTo(Fx_net == path.drivetrain.mass * ax.at(index));
     problem.SubjectTo(Fy_net == path.drivetrain.mass * ay.at(index));
     problem.SubjectTo(tau_net == path.drivetrain.moi * alpha.at(index));
+
+    // Apply voltage constraints
+    auto kt = path.drivetrain.wheelMaxTorque / 120.0;
+    problem.SubjectTo(voltage.at(index) == 12.0 - torqueSum * kt);
   }
 
   for (size_t wptIndex = 0; wptIndex < wptCnt; ++wptIndex) {

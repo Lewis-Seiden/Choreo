@@ -241,6 +241,9 @@ class TRAJOPT_DLLEXPORT SwerveTrajectoryGenerator {
   std::vector<sleipnir::Variable> ay;
   std::vector<sleipnir::Variable> alpha;
 
+  /// Power Variables
+  std::vector<sleipnir::Variable> voltage;
+
   /// Input Variables
   std::vector<std::vector<sleipnir::Variable>> Fx;
   std::vector<std::vector<sleipnir::Variable>> Fy;
